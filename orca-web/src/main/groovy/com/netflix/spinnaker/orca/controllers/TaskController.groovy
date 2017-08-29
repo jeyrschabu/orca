@@ -287,6 +287,24 @@ class TaskController {
     return [result: evaluated?.expression]
   }
 
+  @RequestMapping(value = "/applications/{application}/pipelineConfigs/{pipelineConfigId}/evaluateExpression")
+  Map<String, Object> evaluateExpression(@PathVariable("application") String application,
+                                         @PathVariable("pipelineConfigId") String pipelineConfigId,
+                                         @RequestParam("expression") String expression,
+                                         @RequestParam(value="executionId", required = false) String executionId) {
+    Map<String, Object> pipeline = front50Service.getPipelines(application).find { it.id == pipelineConfigId }
+    Map<String, Object> context = [:]
+    if (pipeline) {
+      context['trigger'] = pipeline.trigger
+    }
+
+    if (executionId) {
+      context['execution'] = executionRepository.retrievePipeline(executionId)
+    }
+
+    return contextParameterProcessor.processV2([expression: expression], context, true)
+  }
+
   @PreAuthorize("hasPermission(#application, 'APPLICATION', 'READ')")
   @RequestMapping(value = "/v2/applications/{application}/pipelines", method = RequestMethod.GET)
   List<Pipeline> getApplicationPipelines(@PathVariable String application,
